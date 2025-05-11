@@ -17,10 +17,16 @@ jobs:
         with:
           dotnet-version: 8.x
       - name: 📦 Restore Dependencies
-        run: dotnet restore ./Api/Api.csproj
+        run: |
+          dotnet restore ./Api/Api.csproj
+          dotnet restore ./Repository/Repository.csproj
+          dotnet restore ./Services/Services.csproj
+          dotnet restore ./Tests/Tests.csproj
       - name: 🏗️ Build Projects
         run: |
           dotnet build ./Api/Api.csproj --no-restore
+          dotnet build ./Repository/Repository.csproj --no-restore
+          dotnet build ./Services/Services.csproj --no-restore
           dotnet build ./Tests/Tests.csproj --no-restore
   
       - name: ✅ Run Tests
