@@ -56,5 +56,12 @@ namespace Equipment.Api.Controllers
             await _service.DeleteAsync(id);
             return Ok();
         }
+
+        [HttpGet("{equipmentId}/maintenances")]
+        public async Task<ActionResult<IEnumerable<GetMaintenanceTaskDto>>> GetMaintenances(int equipmentId)
+        {
+            var maintenances = await _service.GetMaintenancesByEquipmentIdAsync(equipmentId);
+            return Ok(maintenances);
+        }
     }
 } 

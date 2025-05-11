@@ -25,7 +25,7 @@ namespace Services
             }
             catch (Exception ex)
             {
-                throw new EquipmentServiceException("Failed to retrieve equipment list.", ex);
+                throw new GlobalExceptionHandler("Failed to retrieve equipment list.", ex);
             }
         }
 
@@ -33,7 +33,7 @@ namespace Services
         {
             var equipment = await _context.Equipments.Include(e => e.EquipmentType).FirstOrDefaultAsync(e => e.Id == id);
             if (equipment == null)
-                throw new EquipmentServiceException($"Equipment with id {id} not found.");
+                throw new GlobalExceptionHandler($"Equipment with id {id} not found.");
             return _mapper.Map<GetEquipmentDto>(equipment);
         }
         public async Task<GetEquipmentDto> CreateAsync(UpSertEquipmentDto equipmentDto)
@@ -48,7 +48,7 @@ namespace Services
             }
             catch (Exception ex)
             {
-                throw new EquipmentServiceException("Failed to create equipment.", ex);
+                throw new GlobalExceptionHandler("Failed to create equipment.", ex);
             }
         }
 
@@ -56,7 +56,7 @@ namespace Services
         {
             var equipmentToUpdate = await _context.Equipments.FindAsync(id);
             if (equipmentToUpdate == null)
-                throw new EquipmentServiceException($"Equipment with id {id} not found.");
+                throw new GlobalExceptionHandler($"Equipment with id {id} not found.");
             _mapper.Map(equipment, equipmentToUpdate);
             try
             {
@@ -66,7 +66,7 @@ namespace Services
             }
             catch (Exception ex)
             {
-                throw new EquipmentServiceException("Failed to update equipment.", ex);
+                throw new GlobalExceptionHandler("Failed to update equipment.", ex);
             }
         }
 
@@ -74,7 +74,7 @@ namespace Services
         {
             var equipment = await _context.Equipments.FindAsync(id);
             if (equipment == null)
-                throw new EquipmentServiceException($"Equipment with id {id} not found.");
+                throw new GlobalExceptionHandler($"Equipment with id {id} not found.");
             _context.Equipments.Remove(equipment);
             try
             {
@@ -83,8 +83,23 @@ namespace Services
             }
             catch (Exception ex)
             {
-                throw new EquipmentServiceException("Failed to delete equipment.", ex);
+                throw new GlobalExceptionHandler("Failed to delete equipment.", ex);
             }
+        }
+
+        public async Task<List<GetMaintenanceTaskDto>> GetMaintenancesByEquipmentIdAsync(int equipmentId)
+        {
+            var equipment = await _context.Equipments
+                .Include(e => e.EquipmentMaintenances)
+                    .ThenInclude(em => em.MaintenanceTask)
+                .FirstOrDefaultAsync(e => e.Id == equipmentId);
+            if (equipment == null)
+                throw new GlobalExceptionHandler($"Equipment with id {equipmentId} not found.");
+
+            var maintenanceTasks = equipment.EquipmentMaintenances
+                .Select(em => em.MaintenanceTask)
+                .ToList();
+            return _mapper.Map<List<GetMaintenanceTaskDto>>(maintenanceTasks);
         }
     }
 }

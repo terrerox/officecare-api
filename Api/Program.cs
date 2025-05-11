@@ -14,6 +14,7 @@ builder.Services.AddDbContext<EquipmentDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<Services.EquipmentService>();
+builder.Services.AddScoped<Services.MaintenanceTaskService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 var app = builder.Build();
 
