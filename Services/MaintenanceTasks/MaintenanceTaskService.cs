@@ -7,14 +7,12 @@ namespace Services.MaintenanceTasks
 {
     public class MaintenanceTaskService : IMaintenanceTaskService
     {
-        private readonly DbContext _context;
         private readonly IMaintenanceTaskRepository _maintenanceTaskRepository;
         private readonly IEquipmentMaintenanceRepository _equipmentMaintenanceRepository;
         private readonly IMapper _mapper;
 
-        public MaintenanceTaskService(DbContext context, IMaintenanceTaskRepository maintenanceTaskRepository, IEquipmentMaintenanceRepository equipmentMaintenanceRepository, IMapper mapper)
+        public MaintenanceTaskService(IMaintenanceTaskRepository maintenanceTaskRepository, IEquipmentMaintenanceRepository equipmentMaintenanceRepository, IMapper mapper)
         {
-            _context = context;
             _maintenanceTaskRepository = maintenanceTaskRepository;
             _equipmentMaintenanceRepository = equipmentMaintenanceRepository;
             _mapper = mapper;
@@ -47,7 +45,6 @@ namespace Services.MaintenanceTasks
             {
                 var task = _mapper.Map<MaintenanceTask>(dto);
                 var createdTask = await _maintenanceTaskRepository.CreateAsync(task);
-                // Add EquipmentMaintenance link
                 var equipmentMaintenance = new EquipmentMaintenance
                 {
                     EquipmentId = dto.EquipmentId,
@@ -71,24 +68,11 @@ namespace Services.MaintenanceTasks
             try
             {
                 await _maintenanceTaskRepository.UpdateAsync(taskToUpdate);
-                // Update EquipmentMaintenance link if needed
                 var equipmentMaintenance = (await _equipmentMaintenanceRepository.GetAllAsync()).FirstOrDefault(em => em.MaintenanceTaskId == id);
-                if (equipmentMaintenance != null)
+                if (equipmentMaintenance != null && dto.EquipmentId != equipmentMaintenance.EquipmentId)
                 {
-                    if (equipmentMaintenance.EquipmentId != dto.EquipmentId)
-                    {
-                        await _equipmentMaintenanceRepository.DeleteAsync(equipmentMaintenance);
+                    await _equipmentMaintenanceRepository.DeleteAsync(equipmentMaintenance);
 
-                        var newEquipmentMaintenance = new EquipmentMaintenance
-                        {
-                            EquipmentId = dto.EquipmentId,
-                            MaintenanceTaskId = id
-                        };
-                        await _equipmentMaintenanceRepository.CreateAsync(newEquipmentMaintenance);
-                    }
-                }
-                else
-                {
                     var newEquipmentMaintenance = new EquipmentMaintenance
                     {
                         EquipmentId = dto.EquipmentId,
@@ -113,4 +97,4 @@ namespace Services.MaintenanceTasks
             return true;
         }
     }
-} 
+}
