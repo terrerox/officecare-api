@@ -21,7 +21,7 @@ jobs:
       - name: 🏗️ Build Projects
         run: |
           dotnet build ./Api/Api.csproj --no-restore
-          dotnet build ./tests/Tests.csproj --no-restore
+          dotnet build ./Tests/Tests.csproj --no-restore
   
       - name: ✅ Run Tests
-        run: dotnet test ./tests/Tests.csproj --no-restore --verbosity normal
+        run: dotnet test ./Tests/Tests.csproj --no-restore --verbosity normal
