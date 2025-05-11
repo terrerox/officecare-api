@@ -1,4 +1,4 @@
-using NUnit.Framework;
+using Xunit;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -10,22 +10,20 @@ using Services.Equipments;
 
 namespace Tests
 {
-    [TestFixture]
     public class EquipmentServiceTests
     {
         private Mock<IEquipmentRepository> _repositoryMock;
         private Mock<IMapper> _mapperMock;
         private EquipmentService _service;
 
-        [SetUp]
-        public void SetUp()
+        public EquipmentServiceTests()
         {
             _repositoryMock = new Mock<IEquipmentRepository>();
             _mapperMock = new Mock<IMapper>();
             _service = new EquipmentService(_repositoryMock.Object, _mapperMock.Object);
         }
 
-        [Test]
+        [Fact]
         public async Task GetMaintenancesByEquipmentIdAsync_ReturnsMappedList()
         {
             var maintenances = new List<MaintenanceTask> { new MaintenanceTask { Id = 1, Description = "desc" } };
@@ -35,14 +33,14 @@ namespace Tests
 
             var result = await _service.GetMaintenancesByEquipmentIdAsync(1);
 
-            Assert.AreEqual(dtos, result);
+            Assert.Equal(dtos, result);
         }
 
-        [Test]
-        public void GetMaintenancesByEquipmentIdAsync_ThrowsKeyNotFound_ReturnsGlobalExceptionHandler()
+        [Fact]
+        public async Task GetMaintenancesByEquipmentIdAsync_ThrowsKeyNotFound_ReturnsGlobalExceptionHandler()
         {
             _repositoryMock.Setup(r => r.GetMaintenancesByEquipmentIdAsync(2)).ThrowsAsync(new KeyNotFoundException("not found"));
-            Assert.ThrowsAsync<GlobalExceptionHandler>(async () => await _service.GetMaintenancesByEquipmentIdAsync(2));
+            await Assert.ThrowsAsync<GlobalExceptionHandler>(async () => await _service.GetMaintenancesByEquipmentIdAsync(2));
         }
     }
 } 
