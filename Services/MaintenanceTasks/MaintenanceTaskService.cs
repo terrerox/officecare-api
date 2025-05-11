@@ -8,11 +8,15 @@ namespace Services.MaintenanceTasks
     public class MaintenanceTaskService : IMaintenanceTaskService
     {
         private readonly DbContext _context;
+        private readonly IMaintenanceTaskRepository _maintenanceTaskRepository;
+        private readonly IEquipmentMaintenanceRepository _equipmentMaintenanceRepository;
         private readonly IMapper _mapper;
 
-        public MaintenanceTaskService(DbContext context, IMapper mapper)
+        public MaintenanceTaskService(DbContext context, IMaintenanceTaskRepository maintenanceTaskRepository, IEquipmentMaintenanceRepository equipmentMaintenanceRepository, IMapper mapper)
         {
             _context = context;
+            _maintenanceTaskRepository = maintenanceTaskRepository;
+            _equipmentMaintenanceRepository = equipmentMaintenanceRepository;
             _mapper = mapper;
         }
 
@@ -20,11 +24,7 @@ namespace Services.MaintenanceTasks
         {
             try
             {
-                var tasks = await _context.EquipmentMaintenances
-                    .Include(em => em.MaintenanceTask)
-                    .Include(em => em.Equipment)
-                        .ThenInclude(e => e.EquipmentType)
-                    .ToListAsync();
+                var tasks = await _equipmentMaintenanceRepository.GetAllAsync();
                 return _mapper.Map<List<GetMaintenanceTaskDto>>(tasks);
             }
             catch (Exception ex)
@@ -35,11 +35,7 @@ namespace Services.MaintenanceTasks
 
         public async Task<GetMaintenanceTaskDto?> GetByIdAsync(int id)
         {
-            var task = await _context.EquipmentMaintenances
-                .Include(em => em.MaintenanceTask)
-                .Include(em => em.Equipment)
-                    .ThenInclude(e => e.EquipmentType)
-                .FirstOrDefaultAsync(em => em.MaintenanceTaskId == id);
+            var task = await _equipmentMaintenanceRepository.GetByIdAsync(id);
             if (task == null)
                 throw new GlobalExceptionHandler($"MaintenanceTask with id {id} not found.");
             return _mapper.Map<GetMaintenanceTaskDto>(task);
@@ -50,17 +46,15 @@ namespace Services.MaintenanceTasks
             try
             {
                 var task = _mapper.Map<MaintenanceTask>(dto);
-                _context.MaintenanceTasks.Add(task);
-                await _context.SaveChangesAsync();
+                var createdTask = await _maintenanceTaskRepository.CreateAsync(task);
                 // Add EquipmentMaintenance link
                 var equipmentMaintenance = new EquipmentMaintenance
                 {
                     EquipmentId = dto.EquipmentId,
-                    MaintenanceTaskId = task.Id
+                    MaintenanceTaskId = createdTask.Id
                 };
-                _context.EquipmentMaintenances.Add(equipmentMaintenance);
-                await _context.SaveChangesAsync();
-                return _mapper.Map<GetMaintenanceTaskDto>(task);
+                await _equipmentMaintenanceRepository.CreateAsync(equipmentMaintenance);
+                return _mapper.Map<GetMaintenanceTaskDto>(createdTask);
             }
             catch (Exception ex)
             {
@@ -70,29 +64,27 @@ namespace Services.MaintenanceTasks
 
         public async Task<GetMaintenanceTaskDto> UpdateAsync(int id, UpSertMaintenanceTaskDto dto)
         {
-            var taskToUpdate = await _context.MaintenanceTasks.FindAsync(id);
+            var taskToUpdate = await _maintenanceTaskRepository.GetByIdAsync(id);
             if (taskToUpdate == null)
                 throw new GlobalExceptionHandler($"MaintenanceTask with id {id} not found.");
             _mapper.Map(dto, taskToUpdate);
             try
             {
-                await _context.SaveChangesAsync();
+                await _maintenanceTaskRepository.UpdateAsync(taskToUpdate);
                 // Update EquipmentMaintenance link if needed
-                var equipmentMaintenance = await _context.EquipmentMaintenances.FirstOrDefaultAsync(em => em.MaintenanceTaskId == id);
+                var equipmentMaintenance = (await _equipmentMaintenanceRepository.GetAllAsync()).FirstOrDefault(em => em.MaintenanceTaskId == id);
                 if (equipmentMaintenance != null)
                 {
                     if (equipmentMaintenance.EquipmentId != dto.EquipmentId)
                     {
-                        _context.EquipmentMaintenances.Remove(equipmentMaintenance);
-                        await _context.SaveChangesAsync();
+                        await _equipmentMaintenanceRepository.DeleteAsync(equipmentMaintenance);
 
                         var newEquipmentMaintenance = new EquipmentMaintenance
                         {
                             EquipmentId = dto.EquipmentId,
                             MaintenanceTaskId = id
                         };
-                        _context.EquipmentMaintenances.Add(newEquipmentMaintenance);
-                        await _context.SaveChangesAsync();
+                        await _equipmentMaintenanceRepository.CreateAsync(newEquipmentMaintenance);
                     }
                 }
                 else
@@ -102,8 +94,7 @@ namespace Services.MaintenanceTasks
                         EquipmentId = dto.EquipmentId,
                         MaintenanceTaskId = id
                     };
-                    _context.EquipmentMaintenances.Add(newEquipmentMaintenance);
-                    await _context.SaveChangesAsync();
+                    await _equipmentMaintenanceRepository.CreateAsync(newEquipmentMaintenance);
                 }
                 return _mapper.Map<GetMaintenanceTaskDto>(taskToUpdate);
             }
@@ -115,19 +106,11 @@ namespace Services.MaintenanceTasks
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var task = await _context.MaintenanceTasks.FindAsync(id);
+            var task = await _maintenanceTaskRepository.GetByIdAsync(id);
             if (task == null)
                 throw new GlobalExceptionHandler($"MaintenanceTask with id {id} not found.");
-            _context.MaintenanceTasks.Remove(task);
-            try
-            {
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw new GlobalExceptionHandler("Failed to delete maintenance task.", ex);
-            }
+            await _maintenanceTaskRepository.DeleteAsync(task);
+            return true;
         }
     }
 } 
