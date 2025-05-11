@@ -1,0 +1,27 @@
+name: Build and Test 🚀
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛠️ Checkout Repository
+        uses: actions/checkout@v4
+      - name: ⚙️ Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+      - name: 📦 Restore Dependencies
+        run: dotnet restore ./Api/Api.csproj
+      - name: 🏗️ Build Projects
+        run: |
+          dotnet build ./Api/Api.csproj --no-restore
+          dotnet build ./tests/Tests.csproj --no-restore
+  
+      - name: ✅ Run Tests
+        run: dotnet test ./tests/Tests.csproj --no-restore --verbosity normal
