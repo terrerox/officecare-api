@@ -1,15 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Repository;
 using AutoMapper;
+using DbContext = Repository.DbContext;
 
 namespace Services.MaintenanceTasks
 {
     public class MaintenanceTaskService : IMaintenanceTaskService
     {
-        private readonly EquipmentDbContext _context;
+        private readonly DbContext _context;
         private readonly IMapper _mapper;
 
-        public MaintenanceTaskService(EquipmentDbContext context, IMapper mapper)
+        public MaintenanceTaskService(DbContext context, IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
@@ -96,7 +97,6 @@ namespace Services.MaintenanceTasks
                 }
                 else
                 {
-                    // If not found, create new link
                     var newEquipmentMaintenance = new EquipmentMaintenance
                     {
                         EquipmentId = dto.EquipmentId,

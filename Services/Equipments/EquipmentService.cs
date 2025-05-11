@@ -1,17 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Repository;
+﻿using Repository;
 using AutoMapper;
 
 namespace Services.Equipments
 {
     public class EquipmentService : IEquipmentService
     {
-        private readonly EquipmentDbContext _context;
+        private readonly IEquipmentRepository _repository;
         private readonly IMapper _mapper;
 
-        public EquipmentService(EquipmentDbContext context, IMapper mapper)
+        public EquipmentService(IEquipmentRepository repository, IMapper mapper)
         {
-            _context = context;
+            _repository = repository;
             _mapper = mapper;
         }
 
@@ -19,7 +18,7 @@ namespace Services.Equipments
         {
             try
             {
-                var equipments = await _context.Equipments.Include(e => e.EquipmentType).ToListAsync();
+                var equipments = await _repository.GetAllAsync();
                 return _mapper.Map<List<GetEquipmentDto>>(equipments);
             }
             catch (Exception ex)
@@ -30,7 +29,7 @@ namespace Services.Equipments
 
         public async Task<GetEquipmentDto?> GetByIdAsync(int id)
         {
-            var equipment = await _context.Equipments.Include(e => e.EquipmentType).FirstOrDefaultAsync(e => e.Id == id);
+            var equipment = await _repository.GetByIdAsync(id);
             if (equipment == null)
                 throw new GlobalExceptionHandler($"Equipment with id {id} not found.");
             return _mapper.Map<GetEquipmentDto>(equipment);
@@ -40,9 +39,7 @@ namespace Services.Equipments
             try
             {
                 var equipment = _mapper.Map<Equipment>(equipmentDto);
-                _context.Equipments.Add(equipment);
-                await _context.SaveChangesAsync();
-                var created = await _context.Equipments.Include(e => e.EquipmentType).FirstOrDefaultAsync(e => e.Id == equipment.Id);
+                var created = await _repository.CreateAsync(equipment);
                 return _mapper.Map<GetEquipmentDto>(created);
             }
             catch (Exception ex)
@@ -51,16 +48,15 @@ namespace Services.Equipments
             }
         }
 
-        public async Task<GetEquipmentDto> UpdateAsync(int id, UpSertEquipmentDto equipment)
+        public async Task<GetEquipmentDto> UpdateAsync(int id, UpSertEquipmentDto equipmentDto)
         {
-            var equipmentToUpdate = await _context.Equipments.FindAsync(id);
+            var equipmentToUpdate = await _repository.GetByIdAsync(id);
             if (equipmentToUpdate == null)
                 throw new GlobalExceptionHandler($"Equipment with id {id} not found.");
-            _mapper.Map(equipment, equipmentToUpdate);
+            _mapper.Map(equipmentDto, equipmentToUpdate);
             try
             {
-                await _context.SaveChangesAsync();
-                var updated = await _context.Equipments.Include(e => e.EquipmentType).FirstOrDefaultAsync(e => e.Id == id);
+                var updated = await _repository.UpdateAsync(equipmentToUpdate);
                 return _mapper.Map<GetEquipmentDto>(updated);
             }
             catch (Exception ex)
@@ -71,17 +67,14 @@ namespace Services.Equipments
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var equipment = await _context.Equipments
-                .Include(e => e.EquipmentMaintenances)
-                .FirstOrDefaultAsync(e => e.Id == id);
+            var equipment = await _repository.GetByIdAsync(id);
             if (equipment == null)
                 throw new GlobalExceptionHandler($"Equipment with id {id} not found.");
             if (equipment.EquipmentMaintenances != null && equipment.EquipmentMaintenances.Any())
                 throw new GlobalExceptionHandler($"Cannot delete equipment with id {id} because it has related maintenance records.");
-            _context.Equipments.Remove(equipment);
             try
             {
-                await _context.SaveChangesAsync();
+                await _repository.DeleteAsync(equipment);
                 return true;
             }
             catch (Exception ex)
@@ -92,17 +85,15 @@ namespace Services.Equipments
 
         public async Task<List<GetMaintenanceTaskDto>> GetMaintenancesByEquipmentIdAsync(int equipmentId)
         {
-            var equipment = await _context.Equipments
-                .Include(e => e.EquipmentMaintenances)
-                    .ThenInclude(em => em.MaintenanceTask)
-                .FirstOrDefaultAsync(e => e.Id == equipmentId);
-            if (equipment == null)
-                throw new GlobalExceptionHandler($"Equipment with id {equipmentId} not found.");
-
-            var maintenanceTasks = equipment.EquipmentMaintenances
-                .Select(em => em.MaintenanceTask)
-                .ToList();
-            return _mapper.Map<List<GetMaintenanceTaskDto>>(maintenanceTasks);
+            try
+            {
+                var maintenanceTasks = await _repository.GetMaintenancesByEquipmentIdAsync(equipmentId);
+                return _mapper.Map<List<GetMaintenanceTaskDto>>(maintenanceTasks);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                throw new GlobalExceptionHandler(ex.Message);
+            }
         }
     }
 }

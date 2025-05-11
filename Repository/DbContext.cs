@@ -2,14 +2,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Repository;
 
-public class EquipmentDbContext : DbContext
+public class DbContext : Microsoft.EntityFrameworkCore.DbContext
 {
-    public EquipmentDbContext(DbContextOptions<EquipmentDbContext> options) : base(options) { }
+    public DbContext(DbContextOptions<DbContext> options) : base(options) { }
 
-    public DbSet<EquipmentType> EquipmentTypes { get; set; }
-    public DbSet<Equipment> Equipments { get; set; }
-    public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
-    public DbSet<EquipmentMaintenance> EquipmentMaintenances { get; set; }
+    public virtual DbSet<EquipmentType> EquipmentTypes { get; set; }
+    public virtual DbSet<Equipment> Equipments { get; set; }
+    public virtual DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
+    public virtual DbSet<EquipmentMaintenance> EquipmentMaintenances { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
