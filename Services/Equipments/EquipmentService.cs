@@ -1,11 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Repository;
 using AutoMapper;
-using System;
 
-namespace Services
+namespace Services.Equipments
 {
-    public class EquipmentService
+    public class EquipmentService : IEquipmentService
     {
         private readonly EquipmentDbContext _context;
         private readonly IMapper _mapper;
@@ -72,9 +71,13 @@ namespace Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var equipment = await _context.Equipments.FindAsync(id);
+            var equipment = await _context.Equipments
+                .Include(e => e.EquipmentMaintenances)
+                .FirstOrDefaultAsync(e => e.Id == id);
             if (equipment == null)
                 throw new GlobalExceptionHandler($"Equipment with id {id} not found.");
+            if (equipment.EquipmentMaintenances != null && equipment.EquipmentMaintenances.Any())
+                throw new GlobalExceptionHandler($"Cannot delete equipment with id {id} because it has related maintenance records.");
             _context.Equipments.Remove(equipment);
             try
             {

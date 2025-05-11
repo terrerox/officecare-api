@@ -1,5 +1,6 @@
 using Services;
 using Microsoft.AspNetCore.Mvc;
+using Services.Equipments;
 
 namespace Equipment.Api.Controllers
 {
@@ -7,9 +8,9 @@ namespace Equipment.Api.Controllers
     [Route("api/equipment")]
     public class EquipmentsController : ControllerBase
     {
-        private readonly EquipmentService _service;
+        private readonly IEquipmentService _service;
 
-        public EquipmentsController(EquipmentService service)
+        public EquipmentsController(IEquipmentService service)
         {
             _service = service;
         }

@@ -12,9 +12,10 @@ namespace Services.Mappings
             CreateMap<MaintenanceTask, GetMaintenanceTaskDto>();
             CreateMap<UpSertMaintenanceTaskDto, MaintenanceTask>();
             CreateMap<EquipmentMaintenance, GetMaintenanceTaskDto>()
-                .ConvertUsing(src => new GetMaintenanceTaskDto {
+                .ConvertUsing((src, dest, context) => new GetMaintenanceTaskDto {
                     Id = src.MaintenanceTask.Id,
-                    Description = src.MaintenanceTask.Description
+                    Description = src.MaintenanceTask.Description,
+                    Equipment = context.Mapper.Map<GetEquipmentDto>(src.Equipment),
                 });
         }
     }

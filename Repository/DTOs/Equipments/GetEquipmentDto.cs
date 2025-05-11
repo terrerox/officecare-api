@@ -6,7 +6,7 @@ namespace Services
         public string Brand { get; set; } 
         public string Model { get; set; }
         public int EquipmentTypeId { get; set; }
-        public DateTime PurchaseDate { get; set; }
+        public DateOnly PurchaseDate { get; set; }
         public string? SerialNumber { get; set; }
     }
 } 

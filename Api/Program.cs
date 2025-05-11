@@ -1,6 +1,7 @@
 using Repository;
 using Microsoft.EntityFrameworkCore;
-using AutoMapper;
+using Services.Equipments;
+using Services.MaintenanceTasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,10 +14,12 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<EquipmentDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<Services.EquipmentService>();
-builder.Services.AddScoped<Services.MaintenanceTaskService>();
+builder.Services.AddScoped<IEquipmentService, EquipmentService>();
+builder.Services.AddScoped<IMaintenanceTaskService, MaintenanceTaskService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 var app = builder.Build();
+
+app.UseMiddleware<EquipmentApi.ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -24,7 +27,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseCors(options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 app.UseHttpsRedirection();
 app.MapControllers();
 app.Run();

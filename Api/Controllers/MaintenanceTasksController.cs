@@ -2,6 +2,7 @@ using Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Services.MaintenanceTasks;
 
 namespace Equipment.Api.Controllers
 {
@@ -9,9 +10,9 @@ namespace Equipment.Api.Controllers
     [Route("api/maintenancetasks")]
     public class MaintenanceTasksController : ControllerBase
     {
-        private readonly MaintenanceTaskService _service;
+        private readonly IMaintenanceTaskService _service;
 
-        public MaintenanceTasksController(MaintenanceTaskService service)
+        public MaintenanceTasksController(IMaintenanceTaskService service)
         {
             _service = service;
         }

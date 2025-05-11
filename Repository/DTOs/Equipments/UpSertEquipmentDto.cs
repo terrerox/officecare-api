@@ -11,7 +11,7 @@ namespace Services
         [Required]
         public int EquipmentTypeId { get; set; }
         [Required]
-        public DateTime PurchaseDate { get; set; }
+        public DateOnly PurchaseDate { get; set; }
         public string? SerialNumber { get; set; }
     }
 } 

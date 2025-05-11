@@ -25,7 +25,7 @@ public class Equipment
     public EquipmentType EquipmentType { get; set; } = null!;
 
     [Required]
-    public DateTime PurchaseDate { get; set; }
+    public DateOnly PurchaseDate { get; set; }
 
     [MaxLength(100)]
     public string? SerialNumber { get; set; }

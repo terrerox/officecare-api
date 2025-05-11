@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Repository;
 using AutoMapper;
 
-namespace Services
+namespace Services.MaintenanceTasks
 {
-    public class MaintenanceTaskService
+    public class MaintenanceTaskService : IMaintenanceTaskService
     {
         private readonly EquipmentDbContext _context;
         private readonly IMapper _mapper;
@@ -19,7 +19,11 @@ namespace Services
         {
             try
             {
-                var tasks = await _context.MaintenanceTasks.ToListAsync();
+                var tasks = await _context.EquipmentMaintenances
+                    .Include(em => em.MaintenanceTask)
+                    .Include(em => em.Equipment)
+                        .ThenInclude(e => e.EquipmentType)
+                    .ToListAsync();
                 return _mapper.Map<List<GetMaintenanceTaskDto>>(tasks);
             }
             catch (Exception ex)
@@ -30,7 +34,11 @@ namespace Services
 
         public async Task<GetMaintenanceTaskDto?> GetByIdAsync(int id)
         {
-            var task = await _context.MaintenanceTasks.FindAsync(id);
+            var task = await _context.EquipmentMaintenances
+                .Include(em => em.MaintenanceTask)
+                .Include(em => em.Equipment)
+                    .ThenInclude(e => e.EquipmentType)
+                .FirstOrDefaultAsync(em => em.MaintenanceTaskId == id);
             if (task == null)
                 throw new GlobalExceptionHandler($"MaintenanceTask with id {id} not found.");
             return _mapper.Map<GetMaintenanceTaskDto>(task);
@@ -42,6 +50,14 @@ namespace Services
             {
                 var task = _mapper.Map<MaintenanceTask>(dto);
                 _context.MaintenanceTasks.Add(task);
+                await _context.SaveChangesAsync();
+                // Add EquipmentMaintenance link
+                var equipmentMaintenance = new EquipmentMaintenance
+                {
+                    EquipmentId = dto.EquipmentId,
+                    MaintenanceTaskId = task.Id
+                };
+                _context.EquipmentMaintenances.Add(equipmentMaintenance);
                 await _context.SaveChangesAsync();
                 return _mapper.Map<GetMaintenanceTaskDto>(task);
             }
@@ -60,6 +76,35 @@ namespace Services
             try
             {
                 await _context.SaveChangesAsync();
+                // Update EquipmentMaintenance link if needed
+                var equipmentMaintenance = await _context.EquipmentMaintenances.FirstOrDefaultAsync(em => em.MaintenanceTaskId == id);
+                if (equipmentMaintenance != null)
+                {
+                    if (equipmentMaintenance.EquipmentId != dto.EquipmentId)
+                    {
+                        _context.EquipmentMaintenances.Remove(equipmentMaintenance);
+                        await _context.SaveChangesAsync();
+
+                        var newEquipmentMaintenance = new EquipmentMaintenance
+                        {
+                            EquipmentId = dto.EquipmentId,
+                            MaintenanceTaskId = id
+                        };
+                        _context.EquipmentMaintenances.Add(newEquipmentMaintenance);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    // If not found, create new link
+                    var newEquipmentMaintenance = new EquipmentMaintenance
+                    {
+                        EquipmentId = dto.EquipmentId,
+                        MaintenanceTaskId = id
+                    };
+                    _context.EquipmentMaintenances.Add(newEquipmentMaintenance);
+                    await _context.SaveChangesAsync();
+                }
                 return _mapper.Map<GetMaintenanceTaskDto>(taskToUpdate);
             }
             catch (Exception ex)

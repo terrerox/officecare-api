@@ -7,5 +7,8 @@ namespace Services
         [Required]
         [MaxLength(200)]
         public string Description { get; set; }
+        
+        [Required]
+        public int EquipmentId { get; set; }
     }
 } 
